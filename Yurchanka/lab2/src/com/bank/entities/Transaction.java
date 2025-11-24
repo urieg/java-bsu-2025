@@ -3,6 +3,7 @@ package com.bank.entities;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 import com.bank.entities.TransactionType;
@@ -26,6 +27,9 @@ public class Transaction {
     public Transaction(TransactionType action, String accountUUID, Long amount) {
         this(action, accountUUID, null, amount);
     }
+
+    private static final DateTimeFormatter FORMATTER =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public Transaction(TransactionType action, String fromAccountUUID, String toAccountUUID, Long amount) {
         if (action == null)
@@ -83,6 +87,7 @@ public class Transaction {
     public TransactionType getAction() { return action; }
     public Long getAmount() { return amount; }
     public LocalDateTime getTimestamp() { return timestamp; }
+    public String getFormattedTimestamp() { return timestamp.format(FORMATTER); }
     public Status getStatus() { return status; }
     public void setStatus(Status newStatus) {this.status = newStatus; }
 }

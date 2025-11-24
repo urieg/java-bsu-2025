@@ -4,6 +4,9 @@ import com.bank.commands.TransactionCommand;
 import com.bank.engine.*;
 import com.bank.entities.*;
 import com.bank.factory.TransactionFactory;
+import com.bank.observers.AccountLogObserver;
+import com.bank.observers.Observer;
+import com.bank.visitors.AccountReportVisitor;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -16,6 +19,7 @@ public class Banking {
     private final DataBaseConnection dbc;
     private final Connection connection;
 
+    private final EventManager eventManager;
     private final UserManager userManager;
     private final AccountManager accountManager;
     private final TransactionManager transactionManager;
@@ -26,9 +30,11 @@ public class Banking {
         dbc = DataBaseConnection.getInstance();
         connection = dbc.getConnection();
 
+        eventManager = new EventManager();
         userManager = new UserManager(connection);
         accountManager = new AccountManager(connection, userManager);
-        transactionManager = new TransactionManager(connection, accountManager);
+        transactionManager = new TransactionManager(connection, accountManager, eventManager);
+
 
         processor = new TransactionProcessor(accountManager, transactionManager);
     }
@@ -79,8 +85,24 @@ public class Banking {
         command.execute();
     }
 
+    public void setObservation(String accountId, Observer observer) {
+        eventManager.subscribe(accountId, observer);
+    }
+    public void stopObservation(Observer observer) {
+        disableObserver(observer);
+    }
+    public void disableObserver(Observer observer) {
+        eventManager.unsubscribeFromAll(observer);
+    }
+
+    public String createReport(AccountLogObserver observer) {
+        AccountReportVisitor reporter = new AccountReportVisitor();
+        observer.accept(reporter);
+        return reporter.getReport();
+    }
+
     public void shutdown() {
-        dbc.closeConnection();
         processor.shutdown();
+        dbc.closeConnection();
     }
 }

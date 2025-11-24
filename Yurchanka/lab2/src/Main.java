@@ -2,6 +2,7 @@ import com.bank.engine.DataBaseConnection;
 import com.bank.entities.*;
 import com.bank.Banking;
 import com.bank.factory.TransactionFactory;
+import com.bank.observers.AccountLogObserver;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -13,7 +14,7 @@ public class Main {
         System.out.println("Инициализация банкинга...");
         Banking app = Banking.getInstance(); // банк уникален, но имитируем запросы с разных устройств
 
-        System.out.println("Регистрация пользователей...");
+        System.out.println("\nРегистрация пользователей...");
         User user1 = new User("Bill Gates", "USER_GATES");
         User user2 = new User("Elon Musk", "USER_MUSK");
         app.registerUser(user1);
@@ -24,16 +25,21 @@ public class Main {
             System.out.println(user.toString());
         }
 
-        System.out.println("Создание счетов пользователей...");
+        System.out.println("\nСоздание счетов пользователей...");
         app.createAccount("ACC_GATES_001","USER_GATES");
         app.createAccount("ACC_GATES_002", "USER_GATES");
         app.createAccount("ACC_MUSK_001", "USER_MUSK");
 
         List<Account> allAccounts = app.getAllAccounts();
-
         for (Account acc : allAccounts) {
             System.out.println(acc.toString());
         }
+
+        System.out.println();
+        AccountLogObserver accountObserver = new AccountLogObserver("ACC_GATES_001");
+        app.setObservation(accountObserver.getAccountId(), accountObserver); // начинаем логировать транзакции счета ACC_GATES_001.
+        AccountLogObserver accountObserver2 = new AccountLogObserver("ACC_GATES_002");
+        app.setObservation(accountObserver2.getAccountId(), accountObserver2);
 
 
         // Выполняем определенную последовательность транзакций
@@ -81,7 +87,20 @@ public class Main {
             System.out.println(tx.toString());
         }
 
-        System.out.println("Завершение работы приложения...");
+        System.out.println( "\nСгенерируем выписку по счету ACC_GATES_001");
+        String report = app.createReport(accountObserver);
+        System.out.println(report);
+
+        System.out.println( "\nСгенерируем выписку по счету ACC_GATES_002");
+        report = app.createReport(accountObserver2);
+        System.out.println(report);
+
+        System.out.println("\nПрекращаем наблюдение за счетом ACC_GATES_001.");
+        app.stopObservation(accountObserver);
+        System.out.println("\nПрекращаем наблюдение за счетом ACC_GATES_002.");
+        app.stopObservation(accountObserver2);
+
+        System.out.println("\nЗавершение работы приложения...");
         app.shutdown();
     }
 }

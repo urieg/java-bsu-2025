@@ -11,17 +11,20 @@ import java.util.UUID;
 public class TransactionManager {
     private final Connection connection;
     private final AccountManager accountManager;
+    private final EventManager eventManager;
 
-    public TransactionManager(Connection connection, AccountManager accountManager) {
+    public TransactionManager(Connection connection, AccountManager accountManager, EventManager eventManager) {
         if (connection == null || accountManager == null)
             throw new IllegalArgumentException("[TX_MANAGER] Ошибка пустые аргументы.");
 
         this.connection = connection;
         this.accountManager = accountManager;
+        this.eventManager = eventManager;
     }
 
     public void saveTransaction(Transaction tx) {
         String sql = "MERGE INTO transactions (uuid, timestamp, action, fromAccountId, toAccountId, amount, status) KEY(uuid) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        eventManager.notify(tx);
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, tx.getUUID());
             ps.setTimestamp(2, Timestamp.valueOf(tx.getTimestamp()));
